@@ -615,6 +615,10 @@ kubectl logs -n kuadrant-system deployment/authorino
 - **502 Bad Gateway**: Check if model services are running and healthy
 - **No Rate Limiting or Auth**: Kick the kuadrant-operator-controller-manager
 
+### Openshift Troubleshooting
+
+- **KServe provisioning failed error**: If istio was installed with upstream helm chart it needs to be full purged. See [Istio Troubleshooting](docs/istio_troubleshooting.md)
+
 ## Customization
 
 ### Adjusting Rate Limits
