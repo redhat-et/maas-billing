@@ -1,0 +1,31 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Use dev path from Kuadrant docs (tracks main/preview channel)
+resources:
+  - https://github.com/Kuadrant/kuadrant-operator//config/install/standard?ref=main
+
+# Patch the CatalogSource to the nightly image that contains TokenRateLimitPolicy
+patches:
+  - target:
+      group: operators.coreos.com
+      version: v1alpha1
+      kind: CatalogSource
+      name: kuadrant-operator-catalog
+      namespace: kuadrant-system
+    patch: |-
+      - op: replace
+        path: /spec/image
+        value: quay.io/kuadrant/kuadrant-operator-catalog:latest
+
+  # Explicitly ensure Subscription uses preview channel
+  - target:
+      group: operators.coreos.com
+      version: v1alpha1
+      kind: Subscription
+      name: kuadrant
+      namespace: kuadrant-system
+    patch: |-
+      - op: replace
+        path: /spec/channel
+        value: preview
