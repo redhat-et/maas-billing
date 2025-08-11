@@ -4,21 +4,21 @@ This repository demonstrates how to deploy a Models-as-a-Service platform using 
 
 ## Demos
 
-These demos require a Kuadrant wasm-shim fork with metric support `oci://ghcr.io/nerdalert/wasm-shim:latest` until metrics are supported upstream discussed in [Question on mapping authorized_calls metrics to a user](https://github.com/Kuadrant/limitador/issues/434)
+These demos require a Kuadrant wasm-shim fork with metric support `oci://ghcr.io/nerdalert/wasm-shim:latest` until metrics are supported upstream discussed in [Question on mapping authorized_calls metrics to a user](https://github.com/Kuadrant/limitador/issues/434). Everything is upstream Kuadrant componentry accept for metrics collections and enabling a metrics scrape target in [nerdalert:wasm-shim:chargeback-wip](https://github.com/Kuadrant/wasm-shim/compare/main...nerdalert:wasm-shim:chargeback-wip).
 
 ### Demo:  Token Rate Limiting User Quotas
 
-1. Generate Requests across various users
-2. Hit Token Caps on each user
-3. View Token Metrics in Prometheus 
+1. Generate requests across various users
+2. Hit token caps on each of the user's policies based on their group
+3. View token metrics in Prometheus 
 
 <video src="https://github.com/user-attachments/assets/2c205809-b7fa-466f-b74a-e0c6c9c26569" controls></video>
 
 ### Demo: Token Rate Policy and Charge Metering
 
-1. Increase TokenRateLimitPolicy Quota
-2. Generate User Tracked Request Load 
-3. View Token Metrics and Chargeback Metering in Prometheus
+1. Increase `TokenRateLimitPolicy` quota
+2. Generate continous user request load across users in the background
+3. View token metrics and chargeback metering in Prometheus (Premium group: $0.008 per/token | Freemium group: $0.005 per/token)
 
 <video src="https://github.com/user-attachments/assets/c08d3e39-3d70-49ff-a67e-1a062eb339b0" controls></video>
 
