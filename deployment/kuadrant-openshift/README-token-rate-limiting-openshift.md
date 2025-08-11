@@ -560,7 +560,7 @@ To persistently use a custom wasm-shim image, you need to update the operator's 
    ```bash
    # Replace the default wasm-shim image in the CSV
    kubectl -n kuadrant-system patch csv kuadrant-operator.v0.0.0 --type='json' \
-     -p='[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/env/1/value", "value": "oci://ghcr.io/nerdalert/wasm-shim:v3"}]'
+     -p='[{"op": "replace", "path": "/spec/install/spec/deployments/0/spec/template/spec/containers/0/env/1/value", "value": "oci://ghcr.io/nerdalert/wasm-shim:latest"}]'
    ```
 
 2. **Restart the operator to pick up the new environment variable**:
