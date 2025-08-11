@@ -105,6 +105,9 @@ if [[ "$OCP" == true ]]; then
   echo "Validating RHOAI operator is installed and DataScienceCluster is ready"
   kubectl wait --for=condition=Ready DataScienceCluster -l 'app.kubernetes.io/created-by=rhods-operator' -n redhat-ods-operator --timeout=300s
   echo "🔧 Skipping KServe setup, Openshift Serverless operator handles this (Installed by the RHOAI operator)"
+
+  echo "🔧 Updating ServiceMeshControlPlane for RHOAI to enable Gateway API"
+  kubectl patch smcp/data-science-smcp -n istio-system --type=merge -p '{"spec":{"mode":"ClusterWide"}}'
 else
   echo "🔧 Installing KServe"
   kubectl apply --server-side -f https://github.com/kserve/kserve/releases/download/v0.15.2/kserve.yaml
@@ -120,6 +123,8 @@ if [[ "$OCP" == true ]]; then
   echo "🔧 Skipping KServe config, Openshift Serverless operator handles this (Installed by the RHOAI operator)"
   echo "🔧 Applying OpenShift Security Context Constraints"
   kubectl apply -f 02b-openshift-scc.yaml
+  echo "🔧 Creating Routes"
+  kubectl apply -f 02a-openshift-routes.yaml
 else
   kubectl apply -f 01-kserve-config.yaml
   kubectl rollout restart deployment/kserve-controller-manager -n kserve
@@ -284,3 +289,9 @@ echo "    Forward the inference gateway with → kubectl port-forward -n llm svc
 echo "    🤖 Run an automated quota stress with → scripts/test-request-limits.sh"
 echo
 echo "🔥 Deploy complete"
+
+if [[ "$OCP" == true ]]; then
+  echo "⚠️ Please validate that you created your `wasm-plugin-pull-secret` pull secret inside of $NAMESPACE"
+  echo "More info here: https://developers.redhat.com/products/red-hat-connectivity-link/quick-setup"
+fi
+
