@@ -1,22 +1,24 @@
 # OpenShift Routes for external access to model endpoints
 # These routes expose the Istio gateway service to external traffic
----
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: qwen3-route
-  namespace: llm
-  labels:
-    app: maas-gateway
-spec:
-  host: qwen3-llm.apps.summit-gpu.octo-emerging.redhataicoe.com
-  to:
-    kind: Service
-    name: inference-gateway-istio
-    weight: 100
-  port:
-    targetPort: 80
-  wildcardPolicy: None
+# ---
+# apiVersion: route.openshift.io/v1
+# kind: Route
+# metadata:
+#   name: qwen3-route
+#   namespace: llm
+#   labels:
+#     app: maas-gateway
+# spec:
+#   to:
+#     kind: Service
+#     name: inference-gateway-istio
+#     weight: 100
+#   port:
+#     targetPort: 80
+#   tls:
+#     termination: edge
+#     insecureEdgeTerminationPolicy: Redirect
+#   wildcardPolicy: None
 ---
 apiVersion: route.openshift.io/v1
 kind: Route
@@ -26,62 +28,70 @@ metadata:
   labels:
     app: maas-gateway
 spec:
-  host: simulator-llm.apps.summit-gpu.octo-emerging.redhataicoe.com
   to:
     kind: Service
     name: inference-gateway-istio
     weight: 100
   port:
     targetPort: 80
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
   wildcardPolicy: None
----
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: granite-route
-  namespace: llm
-  labels:
-    app: maas-gateway
-spec:
-  host: granite-llm.apps.summit-gpu.octo-emerging.redhataicoe.com
-  to:
-    kind: Service
-    name: inference-gateway-istio
-    weight: 100
-  port:
-    targetPort: 80
-  wildcardPolicy: None
----
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: mistral-route
-  namespace: llm
-  labels:
-    app: maas-gateway
-spec:
-  host: mistral-llm.apps.summit-gpu.octo-emerging.redhataicoe.com
-  to:
-    kind: Service
-    name: inference-gateway-istio
-    weight: 100
-  port:
-    targetPort: 80
-  wildcardPolicy: None
----
-apiVersion: route.openshift.io/v1
-kind: Route
-metadata:
-  name: nomic-route
-  namespace: llm
-  labels:
-    app: maas-gateway
-spec:
-  host: nomic-llm.apps.summit-gpu.octo-emerging.redhataicoe.com
-  to:
-    kind: Service
-    name: inference-gateway-istio
-    weight: 100
-  port:
-    targetPort: 80
-  wildcardPolicy: None
+# ---
+# apiVersion: route.openshift.io/v1
+# kind: Route
+# metadata:
+#   name: granite-route
+#   namespace: llm
+#   labels:
+#     app: maas-gateway
+# spec:
+#   to:
+#     kind: Service
+#     name: inference-gateway-istio
+#     weight: 100
+#   port:
+#     targetPort: 80
+#   tls:
+#     termination: edge
+#     insecureEdgeTerminationPolicy: Redirect
+#   wildcardPolicy: None
+# ---
+# apiVersion: route.openshift.io/v1
+# kind: Route
+# metadata:
+#   name: mistral-route
+#   namespace: llm
+#   labels:
+#     app: maas-gateway
+# spec:
+#   to:
+#     kind: Service
+#     name: inference-gateway-istio
+#     weight: 100
+#   port:
+#     targetPort: 80
+#   tls:
+#     termination: edge
+#     insecureEdgeTerminationPolicy: Redirect
+#   wildcardPolicy: None
+# ---
+# apiVersion: route.openshift.io/v1
+# kind: Route
+# metadata:
+#   name: nomic-route
+#   namespace: llm
+#   labels:
+#     app: maas-gateway
+# spec:
+#   to:
+#     kind: Service
+#     name: inference-gateway-istio
+#     weight: 100
+#   port:
+#     targetPort: 80
+#   tls:
+#     termination: edge
+#     insecureEdgeTerminationPolicy: Redirect
+#   wildcardPolicy: None
