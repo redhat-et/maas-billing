@@ -8,11 +8,13 @@ These demos require a Kuadrant wasm-shim fork with metric support `oci://ghcr.io
 
 ### Demo:  Token Rate Limiting User Quotas
 
+> ⚠ If the videos do not render for you, please the [comments in PR-7](https://github.com/redhat-et/maas-billing/pull/7#issuecomment-3179989695) to view them.
+
 1. Generate requests across various users
 2. Hit token caps on each of the user's policies based on their group
 3. View token metrics in Prometheus 
 
-<video src="https://github.com/user-attachments/assets/2c205809-b7fa-466f-b74a-e0c6c9c26569" controls></video>
+https://github.com/user-attachments/assets/4147912c-bd2b-4926-a937-fed99051163d
 
 ### Demo: Token Rate Policy and Charge Metering
 
@@ -20,7 +22,7 @@ These demos require a Kuadrant wasm-shim fork with metric support `oci://ghcr.io
 2. Generate continous user request load across users in the background
 3. View token metrics and chargeback metering in Prometheus (Premium group: $0.008 per/token | Freemium group: $0.005 per/token)
 
-<video src="https://github.com/user-attachments/assets/c08d3e39-3d70-49ff-a67e-1a062eb339b0" controls></video>
+https://github.com/user-attachments/assets/3bf87c3d-0956-4104-80d7-676177c5a79a
 
 ## Architecture Overview
 
@@ -671,4 +673,3 @@ If token rate limiting stops working with the custom image:
    kubectl -n llm delete wasmplugin kuadrant-inference-gateway
    # The operator will recreate it automatically
    ```
-
