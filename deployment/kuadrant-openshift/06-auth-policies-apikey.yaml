@@ -14,7 +14,7 @@ spec:
     name: inference-gateway
   rules:
     authentication:
-      api-key-users:
+      api-key-users-apikey:
         apiKey:
           allNamespaces: true
           selector:
@@ -23,6 +23,15 @@ spec:
         credentials:
           authorizationHeader:
             prefix: APIKEY
+      api-key-users-bearer:
+        apiKey:
+          allNamespaces: true
+          selector:
+            matchLabels:
+              app: llm-gateway
+        credentials:
+          authorizationHeader:
+            prefix: Bearer
     response:
       success:
         filters:

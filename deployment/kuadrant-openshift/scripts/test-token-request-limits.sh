@@ -11,15 +11,17 @@ set -euo pipefail
 API_HOST="simulator-llm.apps.summit-gpu.octo-emerging.redhataicoe.com"
 MODEL_ID="simulator-model"
 INFINITE=false
+NO_SLEEP=false
 
 usage() {
   cat <<EOF
-Usage: $(basename "$0") [--host <hostname>] [-m|--model <model-id>] [-i|--infinite] [--help]
+Usage: $(basename "$0") [--host <hostname>] [-m|--model <model-id>] [-i|--infinite] [--no-sleep] [--help]
 
 Options
   -H, --host      <hostname>  API host (default: $API_HOST)
   -m, --model     <id>        Override model ID (default: $MODEL_ID)
   -i, --infinite             Run tests in a loop until interrupted (max ~10 min)
+  -n, --no-sleep             Skip sleep between iterations (infinite mode only)
   -h, --help                  Show this help and exit
 EOF
 }
@@ -30,6 +32,7 @@ while [[ $# -gt 0 ]]; do
     -H|--host)     API_HOST="$2"; shift 2 ;;
     -m|--model)    MODEL_ID="$2"; shift 2 ;;
     -i|--infinite) INFINITE=true; shift ;;
+    -n|--no-sleep) NO_SLEEP=true; shift ;;
     -h|--help)     usage; exit 0 ;;
     *) echo "❌ Unknown option: $1"; usage; exit 1 ;;
   esac
@@ -40,6 +43,7 @@ BASE_URL="http://${API_HOST}/v1/chat/completions"
 echo "📡  Host    : $API_HOST"
 echo "🤖  Model ID: $MODEL_ID"
 echo "🔁  Infinite mode: $INFINITE"
+echo "😴  No sleep: $NO_SLEEP"
 echo
 
 ########################
@@ -97,8 +101,10 @@ if [ "$INFINITE" = true ]; then
       echo "🛑 Reached ~10 minutes, stopping."
       break
     fi
-    echo "⏳ Sleeping 5s before next iteration..."
-    sleep 5
+    if [ "$NO_SLEEP" = false ]; then
+      echo "⏳ Sleeping 5s before next iteration..."
+      sleep 5
+    fi
   done
 else
   run_tests
