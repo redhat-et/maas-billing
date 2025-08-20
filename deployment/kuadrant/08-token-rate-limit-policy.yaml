@@ -1,7 +1,6 @@
-# Gateway-level Token Rate Limiting Policy - Testing Configuration
-# This policy applies token-based rate limiting with very low limits for easy testing
+# Gateway-level Token Rate Limiting Policy for OpenShift
 # Automatically tracks tokens from response bodies (usage.total_tokens)
-# Uses the same user groups as the request-based rate limiting policy
+# Uses the same user groups as the auth policy configuration
 ---
 apiVersion: kuadrant.io/v1alpha1
 kind: TokenRateLimitPolicy
@@ -16,8 +15,8 @@ spec:
   limits:
     free-user-tokens:
       rates:
-        - limit: 3          # 3 tokens per 2 minutes for free users
-          window: 2m
+        - limit: 100000
+          window: 1m
       when:
         - predicate: |
             auth.identity.groups.split(",").exists(g, g == "free")
@@ -26,20 +25,10 @@ spec:
     
     premium-user-tokens:
       rates:
-        - limit: 6          # 6 tokens per 2 minutes for premium users
-          window: 2m
+        - limit: 500000
+          window: 1m
       when:
         - predicate: |
             auth.identity.groups.split(",").exists(g, g == "premium")
-      counters:
-        - expression: auth.identity.userid
-    
-    enterprise-user-tokens:
-      rates:
-        - limit: 12         # 12 tokens per 2 minutes for enterprise users
-          window: 2m
-      when:
-        - predicate: |
-            auth.identity.groups.split(",").exists(g, g == "enterprise")
       counters:
         - expression: auth.identity.userid
