@@ -108,6 +108,9 @@ if [[ "$OCP" == true ]]; then
 
   echo "🔧 Updating ServiceMeshControlPlane for RHOAI to enable Gateway API"
   kubectl patch smcp/data-science-smcp -n istio-system --type=merge -p '{"spec":{"mode":"ClusterWide"}}'
+
+  echo "🔧 Updating ServiceMeshControlPlane to set mtls to PERMISSIVE (workaround)"
+  kubectl patch smcp/data-science-smcp -n istio-system --type=merge -p '{"spec":{"security":{"dataPlane":{"mtls":false}}}}'
 else
   echo "🔧 Installing KServe"
   kubectl apply --server-side -f https://github.com/kserve/kserve/releases/download/v0.15.2/kserve.yaml
@@ -145,7 +148,7 @@ if [[ "$OCP" == true ]]; then
   echo "Getting Base Domain"
   BASE_DOMAIN=$(oc whoami --show-server | sed 's/https:\/\/api\.//' | sed 's/:.*//')
   kubectl patch -n llm Gateway inference-gateway --type=json -p='[{"op": "replace", "path": "/spec/listeners/0/hostname", "value": "*.'${BASE_DOMAIN}'"}]'
-  kubectl patch -n llm HTTPRoute simulator-domain-route --type=json -p='[{"op": "replace", "path": "/spec/hostnames/0", "value": "simulator-llm.apps.'${BASE_DOMAIN}'"}]'
+  kubectl patch -n llm HTTPRoute simulator-domain-route --type=json -p='[{"op": "replace", "path": "/spec/hostnames/0", "value": "simulator-route-llm.apps.'${BASE_DOMAIN}'"}]'
 fi
 
 if [[ -x ./setup-local-domains.sh ]]; then
@@ -216,7 +219,7 @@ kubectl rollout restart deployment kuadrant-operator-controller-manager -n kuadr
 kubectl wait --for=condition=Available deployment/kuadrant-operator-controller-manager -n kuadrant-system --timeout=300s
 
 # ────────────────────────────── 8. Observability ─────────────────────────────
-if [[ "$SKIP_METRICS" == false ]]; then
+if [[ "$SKIP_METRICS" == false && "$OCP" == false ]]; then
   echo "🔧 8. Installing Prometheus observability"
   
   # Install Prometheus Operator
@@ -228,7 +231,11 @@ if [[ "$SKIP_METRICS" == false ]]; then
   # From models-aas/deployment/kuadrant Kuadrant prometheus observability
   kubectl apply -k kustomize/prometheus/
 else
-  echo "⏭️  8. Skipping Prometheus observability (--skip-metrics flag)"
+  if [[ "$SKIP_METRICS" == true ]]; then
+    echo "⏭️  8. Skipping Prometheus observability (--skip-metrics flag)"
+  else
+    echo "⏭️  8. Skipping Prometheus observability (OCP should already have this installed)"
+  fi
 fi
 
 # ────────────────────────────── 9. Verification ──────────────────────────────
@@ -243,7 +250,7 @@ echo "🔌 Port-forward the gateway in a separate terminal:"
 echo "   kubectl port-forward -n $NAMESPACE svc/inference-gateway-istio 8000:80"
 echo
 
-if [[ "$SKIP_METRICS" == false ]]; then
+if [[ "$SKIP_METRICS" == false && "$OCP" == false ]]; then
 echo "📊 Access Prometheus metrics (in separate terminals):"
 echo "   kubectl port-forward -n llm-observability svc/models-aas-observability 9090:9090"
 echo "   kubectl port-forward -n kuadrant-system svc/limitador-limitador 8080:8080"

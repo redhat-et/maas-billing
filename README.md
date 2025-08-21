@@ -1,8 +1,10 @@
 # Models as a Service Billing
 
 This repository shows how to run AI models as HTTP APIs on Kubernetes.  
-The deployment uses **Kuadrant** together with Istio, Gateway API, and KServe to provide policy,
-authentication, rate-limiting, chargeback and observability. Chargeback is a WIP in upstream Kuadrant metrics.
+The deployment uses **Kuadrant** together with Istio, Gateway API, and KServe to provide policy, authentication, rate-limiting, chargeback and observability. 
+
+>[!NOTE]
+> Chargeback is currently a WIP in upstream Kuadrant metrics.
 
 ## Kuadrant deployment
 
@@ -29,7 +31,10 @@ For step-by-step manual deployment, see [`deployment/kuadrant/README.md`](deploy
 
 ### Dev Quickstart
 
-- Currently validate on vanilla kube, OCP is a WIP.
+- Currently validate on vanilla kube
+
+>[!TIP]
+> OCP is a WIP, and will utilize the RHOAI and other native operators to install infrastructure.
 
 ```bash
 git clone https://github.com/redhat-et/maas-billing.git
@@ -45,6 +50,9 @@ cd deployment/kuadrant
 # Inference simulator on an existing cluster without a GPU
 ./install.sh --simulator
 
+# Deploy to OCP
+# Assumes RHOAI operator is installed
+./install.sh --simulator --ocp
 # Real model on an existing cluster with a GPU
 ./install.sh --qwen3
 

@@ -38,7 +38,8 @@ spec:
     - name: inference-gateway
       namespace: llm
   hostnames:
-    - "simulator-llm.apps.summit-gpu.octo-emerging.redhataicoe.com"
+    # Need to make sure this is correct and matches the route created
+    - "simulator-route-llm.apps.agentops-prod.m5kq.p1.openshiftapps.com"
   rules:
     - matches:
         - path:
