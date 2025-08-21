@@ -1,0 +1,21 @@
+# Gateway-level Token Rate Limiting Policy for key-manager integration
+# Automatically tracks tokens from response bodies (usage.total_tokens)
+# Uses user groups from secret annotations set by key-manager
+---
+apiVersion: kuadrant.io/v1alpha1
+kind: TokenRateLimitPolicy
+metadata:
+  name: gateway-token-rate-limits
+  namespace: llm
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: inference-gateway
+  limits:
+    all-users-tokens:
+      rates:
+        - limit: 10000
+          window: 1m
+      counters:
+        - expression: auth.identity.userid

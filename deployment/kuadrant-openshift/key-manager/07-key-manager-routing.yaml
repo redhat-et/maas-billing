@@ -1,0 +1,26 @@
+# HTTPRoute for Key Manager Service
+# Provides external access via domain-based routing
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: key-manager-domain-route
+  namespace: llm
+  labels:
+    kuadrant.io/gateway: inference-gateway
+spec:
+  parentRefs:
+    - name: inference-gateway
+      namespace: llm
+  hostnames:
+    - "key-manager.apps.summit-gpu.octo-emerging.redhataicoe.com"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: key-manager
+          namespace: platform-services
+          port: 80
+          weight: 100

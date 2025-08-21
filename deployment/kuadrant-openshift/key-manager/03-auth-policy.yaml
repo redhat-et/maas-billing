@@ -1,0 +1,41 @@
+---
+apiVersion: kuadrant.io/v1
+kind: AuthPolicy
+metadata:
+  name: gateway-auth-policy
+  namespace: llm
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: inference-gateway
+  rules:
+    authentication:
+      api-key-users-apikey:
+        apiKey:
+          allNamespaces: true
+          selector:
+            matchLabels:
+              kuadrant.io/apikeys-by: rhcl-keys
+        credentials:
+          authorizationHeader:
+            prefix: APIKEY
+      api-key-users-bearer:
+        apiKey:
+          allNamespaces: true
+          selector:
+            matchLabels:
+              kuadrant.io/apikeys-by: rhcl-keys
+        credentials:
+          authorizationHeader:
+            prefix: Bearer
+    response:
+      success:
+        filters:
+          identity:
+            json:
+              properties:
+                userid:
+                  selector: auth.identity.metadata.labels.maas/user-id
+                groups:
+                  selector: auth.identity.metadata.labels.maas/user-id

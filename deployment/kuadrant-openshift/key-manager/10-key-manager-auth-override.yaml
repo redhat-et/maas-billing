@@ -1,0 +1,17 @@
+# AuthPolicy override for key-manager HTTPRoute
+# Allows key-manager to handle its own authentication instead of gateway-level policy
+---
+apiVersion: kuadrant.io/v1
+kind: AuthPolicy
+metadata:
+  name: key-manager-auth-override
+  namespace: llm
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: key-manager-domain-route
+  rules:
+    authentication:
+      allow-all:
+        anonymous: {}
