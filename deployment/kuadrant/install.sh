@@ -81,7 +81,12 @@ echo
 # ────────────────────────────── 1. Istio / Gateway API ────────────────────────
 echo "🔧 1. Installing Istio & Gateway API"
 chmod +x istio-install.sh
-./istio-install.sh apply
+if [[ "$OCP" == true ]]; then
+  # I keep running into issues because it is installed by servicemesh already
+  echo "Skipping Istio installation on OCP..."
+else
+  ./istio-install.sh apply
+fi
 
 # ────────────────────────────── 2. Namespaces ────────────────────────────────
 echo "🔧 2. Creating namespaces"
@@ -97,11 +102,15 @@ kubectl wait --for=condition=Available deployment/cert-manager-cainjector -n cer
 kubectl wait --for=condition=Available deployment/cert-manager-webhook   -n cert-manager --timeout=300s
 
 if [[ "$OCP" == true ]]; then
-  echo "🔧 Installing Openshift Serverless"
-  kubectl apply --server-side -f https://raw.githubusercontent.com/kserve/kserve/refs/heads/master/docs/openshift/serverless/operator.yaml
+  echo "Validating RHOAI operator is installed and DataScienceCluster is ready"
+  kubectl wait --for=condition=Ready DataScienceCluster -l 'app.kubernetes.io/created-by=rhods-operator' -n redhat-ods-operator --timeout=300s
+  echo "🔧 Skipping KServe setup, Openshift Serverless operator handles this (Installed by the RHOAI operator)"
 
-  echo "⏳   Waiting for Openshift Serverless controller"
-  kubectl wait --for=condition=ready pod --all -n openshift-serverless --timeout=300s
+  echo "🔧 Updating ServiceMeshControlPlane for RHOAI to enable Gateway API"
+  kubectl patch smcp/data-science-smcp -n istio-system --type=merge -p '{"spec":{"mode":"ClusterWide"}}'
+
+  echo "🔧 Updating ServiceMeshControlPlane to set mtls to PERMISSIVE (workaround)"
+  kubectl patch smcp/data-science-smcp -n istio-system --type=merge -p '{"spec":{"security":{"dataPlane":{"mtls":false}}}}'
 else
   echo "🔧 Installing KServe"
   kubectl apply --server-side -f https://github.com/kserve/kserve/releases/download/v0.15.2/kserve.yaml
@@ -111,17 +120,36 @@ else
 fi
 
 echo "🔧 Configuring KServe for Gateway API"
-kubectl apply -f 01-kserve-config.yaml
-kubectl rollout restart deployment/kserve-controller-manager -n kserve
-kubectl wait --for=condition=Available deployment/kserve-controller-manager -n kserve --timeout=120s
+if [[ "$OCP" == true ]]; then
+  # Removing this for now, not sure if we need to make this these updates in order to get the gateway api to work later
+  # kubectl apply -f 01-kserve-config.yaml
+  echo "🔧 Skipping KServe config, Openshift Serverless operator handles this (Installed by the RHOAI operator)"
+  echo "🔧 Applying OpenShift Security Context Constraints"
+  kubectl apply -f 02b-openshift-scc.yaml
+  echo "🔧 Creating Routes"
+  kubectl apply -f 02a-openshift-routes.yaml
+else
+  kubectl apply -f 01-kserve-config.yaml
+  kubectl rollout restart deployment/kserve-controller-manager -n kserve
+  kubectl wait --for=condition=Available deployment/kserve-controller-manager -n kserve --timeout=120s
 
-echo "📄  Current inferenceservice-config ConfigMap:"
-kubectl get configmap inferenceservice-config -n kserve -o yaml
+  echo "📄  Current inferenceservice-config ConfigMap:"
+  kubectl get configmap inferenceservice-config -n kserve -o yaml
+fi
+
+
 
 # ────────────────────────────── 4. Gateway + Routes ──────────────────────────
 echo "🔧 4. Setting up Gateway and domain-based routes"
 kubectl apply -f 02-gateway-configuration.yaml
 kubectl apply -f 03-model-routing-domains.yaml
+
+if [[ "$OCP" == true ]]; then
+  echo "Getting Base Domain"
+  BASE_DOMAIN=$(oc whoami --show-server | sed 's/https:\/\/api\.//' | sed 's/:.*//')
+  kubectl patch -n llm Gateway inference-gateway --type=json -p='[{"op": "replace", "path": "/spec/listeners/0/hostname", "value": "*.'${BASE_DOMAIN}'"}]'
+  kubectl patch -n llm HTTPRoute simulator-domain-route --type=json -p='[{"op": "replace", "path": "/spec/hostnames/0", "value": "simulator-route-llm.apps.'${BASE_DOMAIN}'"}]'
+fi
 
 if [[ -x ./setup-local-domains.sh ]]; then
   ./setup-local-domains.sh setup
@@ -133,7 +161,10 @@ if [[ "$OCP" == true ]]; then
   kubectl apply -k kustomize/connectivitylink/
 
   echo "⏳   Waiting for Connectivity Link operator"
-  kubectl wait --for=condition=Available deployment/rhcl-operator -n kuadrant-system --timeout=300s
+  kubectl wait --for=condition=Available deployment/kuadrant-operator-controller-manager -n kuadrant-system --timeout=300s
+
+  echo "🔧 Installing Kuadrant Instance"
+  kubectl apply -f 04-kuadrant-operator.yaml
 else
   echo "🔧 5. Installing Kuadrant operator"
   helm repo add kuadrant https://kuadrant.io/helm-charts
@@ -153,11 +184,19 @@ echo "🔧 6. Deploying model(s)"
 
 case "$MODEL_TYPE" in
   simulator)
-    kubectl apply -f ../model_serving/vllm-simulator-kserve.yaml
+    if [[ "$OCP" == true ]]; then
+      kubectl apply -f ../model_serving/vllm-simulator-kserve-openshift.yaml
+    else
+      kubectl apply -f ../model_serving/vllm-simulator-kserve.yaml
+    fi
     kubectl wait --for=condition=Ready inferenceservice/vllm-simulator -n "$NAMESPACE" --timeout=120s
     ;;
   qwen3)
-    kubectl apply -f ../model_serving/vllm-latest-runtime.yaml
+    if [[ "$OCP" == true ]]; then
+      kubectl apply -f ../model_serving/qwen3-0.6b-vllm-raw-openshift.yaml
+    else
+      kubectl apply -f ../model_serving/qwen3-0.6b-vllm-raw.yaml
+    fi
     kubectl apply -f ../model_serving/qwen3-0.6b-vllm-raw.yaml
     # Uncomment the wait if you want the accelerator to finish loading before proceeding
     # kubectl wait --for=condition=Ready inferenceservice/qwen3-0-6b-instruct -n "$NAMESPACE" --timeout=900s
@@ -180,7 +219,7 @@ kubectl rollout restart deployment kuadrant-operator-controller-manager -n kuadr
 kubectl wait --for=condition=Available deployment/kuadrant-operator-controller-manager -n kuadrant-system --timeout=300s
 
 # ────────────────────────────── 8. Observability ─────────────────────────────
-if [[ "$SKIP_METRICS" == false ]]; then
+if [[ "$SKIP_METRICS" == false && "$OCP" == false ]]; then
   echo "🔧 8. Installing Prometheus observability"
   
   # Install Prometheus Operator
@@ -192,7 +231,11 @@ if [[ "$SKIP_METRICS" == false ]]; then
   # From models-aas/deployment/kuadrant Kuadrant prometheus observability
   kubectl apply -k kustomize/prometheus/
 else
-  echo "⏭️  8. Skipping Prometheus observability (--skip-metrics flag)"
+  if [[ "$SKIP_METRICS" == true ]]; then
+    echo "⏭️  8. Skipping Prometheus observability (--skip-metrics flag)"
+  else
+    echo "⏭️  8. Skipping Prometheus observability (OCP should already have this installed)"
+  fi
 fi
 
 # ────────────────────────────── 9. Verification ──────────────────────────────
@@ -207,7 +250,7 @@ echo "🔌 Port-forward the gateway in a separate terminal:"
 echo "   kubectl port-forward -n $NAMESPACE svc/inference-gateway-istio 8000:80"
 echo
 
-if [[ "$SKIP_METRICS" == false ]]; then
+if [[ "$SKIP_METRICS" == false && "$OCP" == false ]]; then
 echo "📊 Access Prometheus metrics (in separate terminals):"
 echo "   kubectl port-forward -n llm-observability svc/models-aas-observability 9090:9090"
 echo "   kubectl port-forward -n kuadrant-system svc/limitador-limitador 8080:8080"
@@ -253,3 +296,9 @@ echo "    Forward the inference gateway with → kubectl port-forward -n llm svc
 echo "    🤖 Run an automated quota stress with → scripts/test-request-limits.sh"
 echo
 echo "🔥 Deploy complete"
+
+if [[ "$OCP" == true ]]; then
+  echo "⚠️ Please validate that you created your `wasm-plugin-pull-secret` pull secret inside of $NAMESPACE"
+  echo "More info here: https://developers.redhat.com/products/red-hat-connectivity-link/quick-setup"
+fi
+

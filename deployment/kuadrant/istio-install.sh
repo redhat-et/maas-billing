@@ -13,16 +13,22 @@ set -e
 MODE=${1:-apply}
 TAG=1.26.2
 HUB=gcr.io/istio-release
+OCP=false
 
 # Default namespace values, can be overridden by environment variables
 VLLM_NAMESPACE=${VLLM_NAMESPACE:-llm}
 OBSERVABILITY_NAMESPACE=${OBSERVABILITY_NAMESPACE:-llm-observability}
+OCP=${OCP:-false}
 
 echo "Istio installation mode: $MODE"
 echo "Using tag: $TAG"
 echo "Using hub: $HUB"
 echo "vLLM namespace: $VLLM_NAMESPACE"
 echo "Observability namespace: $OBSERVABILITY_NAMESPACE"
+if [[ "$OCP" == true ]]; then
+    echo "Skipping Istio installation on OCP..."
+    return
+fi
 
 if [[ "$MODE" == "apply" ]]; then
     echo "Installing Istio..."

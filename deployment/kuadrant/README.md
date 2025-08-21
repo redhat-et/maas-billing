@@ -615,6 +615,12 @@ kubectl logs -n kuadrant-system deployment/authorino
 - **502 Bad Gateway**: Check if model services are running and healthy
 - **No Rate Limiting or Auth**: Kick the kuadrant-operator-controller-manager
 
+### Openshift Troubleshooting
+
+- **KServe provisioning failed error**: If istio was installed with upstream helm chart it needs to be full purged. See [Istio Troubleshooting](docs/istio_troubleshooting.md)
+- **Inference service not found**: If `inference-gateway-istio` pod is showing `cannot fetch Wasm module llm.kuadrant-inference-gateway: missing image pulling secret` then create a secret with the image pull secret for the `llm` namespace. More info [here](https://developers.redhat.com/products/red-hat-connectivity-link/quick-setup#installtheopenshiftservicemesh30operator5990)
+
+
 ## Customization
 
 ### Adjusting Rate Limits

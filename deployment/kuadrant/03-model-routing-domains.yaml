@@ -2,28 +2,28 @@
 # Use with /etc/hosts entries for local testing
 ---
 # HTTPRoute for Qwen3 Model - qwen3.maas.local
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: qwen3-domain-route
-  namespace: llm
-  labels:
-    kuadrant.io/gateway: inference-gateway
-spec:
-  parentRefs:
-    - name: inference-gateway
-      namespace: llm
-  hostnames:
-    - "qwen3-llm.apps.summit-gpu.octo-emerging.redhataicoe.com"
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-      backendRefs:
-        - name: qwen3-0-6b-instruct-predictor
-          port: 80
-          weight: 100
+# apiVersion: gateway.networking.k8s.io/v1
+# kind: HTTPRoute
+# metadata:
+#   name: qwen3-domain-route
+#   namespace: llm
+#   labels:
+#     kuadrant.io/gateway: inference-gateway
+# spec:
+#   parentRefs:
+#     - name: inference-gateway
+#       namespace: llm
+#   hostnames:
+#     - "qwen3-llm.apps.summit-gpu.octo-emerging.redhataicoe.com"
+#   rules:
+#     - matches:
+#         - path:
+#             type: PathPrefix
+#             value: /
+#       backendRefs:
+#         - name: qwen3-0-6b-instruct-predictor
+#           port: 80
+#           weight: 100
 ---
 # HTTPRoute for Simulator - simulator.maas.local
 apiVersion: gateway.networking.k8s.io/v1
@@ -38,7 +38,8 @@ spec:
     - name: inference-gateway
       namespace: llm
   hostnames:
-    - "simulator-llm.apps.summit-gpu.octo-emerging.redhataicoe.com"
+    # Need to make sure this is correct and matches the route created
+    - "simulator-route-llm.apps.agentops-prod.m5kq.p1.openshiftapps.com"
   rules:
     - matches:
         - path:
@@ -48,75 +49,75 @@ spec:
         - name: vllm-simulator-predictor
           port: 80
           weight: 100
----
-# HTTPRoute for Granite Model - granite.maas.local
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: granite-domain-route
-  namespace: llm
-  labels:
-    kuadrant.io/gateway: inference-gateway
-spec:
-  parentRefs:
-    - name: inference-gateway
-      namespace: llm
-  hostnames:
-    - "granite-llm.apps.summit-gpu.octo-emerging.redhataicoe.com"
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-      backendRefs:
-        - name: granite-8b-code-instruct-128k-predictor
-          port: 80
-          weight: 100
----
-# HTTPRoute for Mistral Model - mistral.maas.local
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: mistral-domain-route
-  namespace: llm
-  labels:
-    kuadrant.io/gateway: inference-gateway
-spec:
-  parentRefs:
-    - name: inference-gateway
-      namespace: llm
-  hostnames:
-    - "mistral-llm.apps.summit-gpu.octo-emerging.redhataicoe.com"
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-      backendRefs:
-        - name: mistral-7b-instruct-predictor
-          port: 80
-          weight: 100
----
-# HTTPRoute for Nomic Embeddings - nomic.maas.local
-apiVersion: gateway.networking.k8s.io/v1
-kind: HTTPRoute
-metadata:
-  name: nomic-domain-route
-  namespace: llm
-  labels:
-    kuadrant.io/gateway: inference-gateway
-spec:
-  parentRefs:
-    - name: inference-gateway
-      namespace: llm
-  hostnames:
-    - "nomic-llm.apps.summit-gpu.octo-emerging.redhataicoe.com"
-  rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /
-      backendRefs:
-        - name: nomic-embed-text-v1-5-predictor
-          port: 80
-          weight: 100
+# --- 
+# # HTTPRoute for Granite Model - granite.maas.local
+# apiVersion: gateway.networking.k8s.io/v1
+# kind: HTTPRoute
+# metadata:
+#   name: granite-domain-route
+#   namespace: llm
+#   labels:
+#     kuadrant.io/gateway: inference-gateway
+# spec:
+#   parentRefs:
+#     - name: inference-gateway
+#       namespace: llm
+#   hostnames:
+#     - "granite-llm.apps.summit-gpu.octo-emerging.redhataicoe.com"
+#   rules:
+#     - matches:
+#         - path:
+#             type: PathPrefix
+#             value: /
+#       backendRefs:
+#         - name: granite-8b-code-instruct-128k-predictor
+#           port: 80
+#           weight: 100
+# ---
+# # HTTPRoute for Mistral Model - mistral.maas.local
+# apiVersion: gateway.networking.k8s.io/v1
+# kind: HTTPRoute
+# metadata:
+#   name: mistral-domain-route
+#   namespace: llm
+#   labels:
+#     kuadrant.io/gateway: inference-gateway
+# spec:
+#   parentRefs:
+#     - name: inference-gateway
+#       namespace: llm
+#   hostnames:
+#     - "mistral-llm.apps.summit-gpu.octo-emerging.redhataicoe.com"
+#   rules:
+#     - matches:
+#         - path:
+#             type: PathPrefix
+#             value: /
+#       backendRefs:
+#         - name: mistral-7b-instruct-predictor
+#           port: 80
+#           weight: 100
+# ---
+# # HTTPRoute for Nomic Embeddings - nomic.maas.local
+# apiVersion: gateway.networking.k8s.io/v1
+# kind: HTTPRoute
+# metadata:
+#   name: nomic-domain-route
+#   namespace: llm
+#   labels:
+#     kuadrant.io/gateway: inference-gateway
+# spec:
+#   parentRefs:
+#     - name: inference-gateway
+#       namespace: llm
+#   hostnames:
+#     - "nomic-llm.apps.summit-gpu.octo-emerging.redhataicoe.com"
+#   rules:
+#     - matches:
+#         - path:
+#             type: PathPrefix
+#             value: /
+#       backendRefs:
+#         - name: nomic-embed-text-v1-5-predictor
+#           port: 80
+#           weight: 100
