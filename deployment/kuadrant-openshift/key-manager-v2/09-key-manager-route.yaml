@@ -1,0 +1,19 @@
+# OpenShift Route for Key Manager Service
+# Directs traffic from OpenShift router to Istio gateway
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: key-manager-route
+  namespace: llm
+  labels:
+    app: maas-gateway
+spec:
+  host: key-manager.apps.summit-gpu.octo-emerging.redhataicoe.com
+  port:
+    targetPort: 80
+  to:
+    kind: Service
+    name: inference-gateway-istio
+    weight: 100
+  wildcardPolicy: None

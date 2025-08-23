@@ -1,0 +1,61 @@
+# Optional: External access for remote key management
+# Choose ONE of the options below based on your cluster setup TODO: pick one
+
+# Option 1: OpenShift Route (for OpenShift clusters)
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: key-manager-route
+  namespace: platform-services
+spec:
+  to:
+    kind: Service
+    name: key-manager
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+# Option 2: Kubernetes Ingress (for other clusters)  
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: key-manager-ingress
+  namespace: platform-services
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  tls:
+  - hosts:
+    - key-manager.your-domain.com
+    secretName: key-manager-tls
+  rules:
+  - host: key-manager.your-domain.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: key-manager
+            port:
+              number: 80
+
+# Option 3: LoadBalancer Service (for cloud providers)
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: key-manager-external
+  namespace: platform-services
+spec:
+  type: LoadBalancer
+  selector:
+    app: key-manager
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080

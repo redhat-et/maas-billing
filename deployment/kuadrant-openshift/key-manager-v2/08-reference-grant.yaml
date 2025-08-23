@@ -1,0 +1,17 @@
+# ReferenceGrant to allow HTTPRoute in llm namespace to reference 
+# key-manager service in platform-services namespace
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: key-manager-access
+  namespace: platform-services
+spec:
+  from:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    namespace: llm
+  to:
+  - group: ""
+    kind: Service
+    name: key-manager
