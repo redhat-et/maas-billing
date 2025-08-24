@@ -16,7 +16,7 @@ spec:
           allNamespaces: true
           selector:
             matchLabels:
-              kuadrant.io/apikeys-by: rhcl-keys
+              app: llm-gateway
         credentials:
           authorizationHeader:
             prefix: APIKEY
@@ -25,7 +25,7 @@ spec:
           allNamespaces: true
           selector:
             matchLabels:
-              kuadrant.io/apikeys-by: rhcl-keys
+              app: llm-gateway
         credentials:
           authorizationHeader:
             prefix: Bearer
@@ -36,6 +36,6 @@ spec:
             json:
               properties:
                 userid:
-                  selector: auth.identity.metadata.labels.maas/user-id
+                  selector: auth.identity.metadata.annotations.secret\.kuadrant\.io/user-id
                 groups:
-                  selector: auth.identity.metadata.labels.maas/user-id
+                  selector: auth.identity.metadata.annotations.kuadrant\.io/groups

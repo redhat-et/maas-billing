@@ -12,8 +12,8 @@ metadata:
   namespace: llm
 rules:
 - apiGroups: [""]
-  resources: ["secrets"]
-  verbs: ["get","list","create","delete","watch"]
+  resources: ["secrets", "configmaps"]
+  verbs: ["get","list","create","update","patch","delete","watch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -29,21 +29,27 @@ roleRef:
   kind: Role
   name: key-manager-secrets
 ---
-# Optional: Allow key-manager to read HTTPRoutes for discovery endpoint
+# Allow key-manager to manage Kuadrant policies
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: key-manager-httproutes
+  name: key-manager-policies
   namespace: llm
 rules:
+- apiGroups: ["kuadrant.io"]
+  resources: ["authpolicies", "tokenratelimitpolicies"]
+  verbs: ["get","list","create","update","patch","delete","watch"]
 - apiGroups: ["gateway.networking.k8s.io"]
   resources: ["httproutes"]
   verbs: ["get","list","watch"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: key-manager-httproutes
+  name: key-manager-policies
   namespace: llm
 subjects:
 - kind: ServiceAccount
@@ -52,4 +58,51 @@ subjects:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: key-manager-httproutes
+  name: key-manager-policies
+---
+# Allow key-manager to list InferenceServices across all namespaces
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: key-manager-inference-services
+rules:
+- apiGroups: ["serving.kserve.io"]
+  resources: ["inferenceservices"]
+  verbs: ["get", "list", "watch"]
+---
+# Allow key-manager to restart Kuadrant deployments
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: key-manager-kuadrant-restart
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "patch"]
+  resourceNames: ["authorino", "kuadrant-operator-controller-manager"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: key-manager-inference-services
+subjects:
+- kind: ServiceAccount
+  name: key-manager
+  namespace: platform-services
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: key-manager-inference-services
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: key-manager-kuadrant-restart
+subjects:
+- kind: ServiceAccount
+  name: key-manager
+  namespace: platform-services
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: key-manager-kuadrant-restart

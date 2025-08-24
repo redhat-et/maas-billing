@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o key-manager .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o key-manager ./cmd/key-manager
 
 # Runtime stage
 FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
