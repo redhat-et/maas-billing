@@ -1,0 +1,44 @@
+{
+  "name": "qos-prioritizer",
+  "version": "1.0.0",
+  "description": "Quality of Service prioritization service for MaaS platform",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "p-queue": "^8.1.0",
+    "socket.io": "^4.7.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.8",
+    "@types/node": "^20.10.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
+    "eslint": "^8.54.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.2"
+  },
+  "keywords": [
+    "qos",
+    "priority",
+    "kubernetes",
+    "llm",
+    "rate-limiting"
+  ],
+  "author": "MaaS Platform Team",
+  "license": "MIT"
+}

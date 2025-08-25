@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:3002/api/v1';
+const API_BASE_URL = 'http://localhost:3001/api/v1';
 
 class ApiService {
   private async fetch(endpoint: string, options: RequestInit = {}) {

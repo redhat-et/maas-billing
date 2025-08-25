@@ -1,0 +1,195 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-llm
+  namespace: llm
+  labels:
+    app: simple-llm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simple-llm
+  template:
+    metadata:
+      labels:
+        app: simple-llm
+    spec:
+      containers:
+      - name: simple-llm
+        image: python:3.11-slim
+        command: ["python", "-c"]
+        args:
+        - |
+          import json
+          import time
+          import random
+          from http.server import HTTPServer, BaseHTTPRequestHandler
+
+          # Install compatible versions without version conflicts
+          import subprocess
+          import sys
+          
+          print("🚀 Installing stable packages...")
+          subprocess.check_call([
+              sys.executable, "-m", "pip", "install", 
+              "numpy==1.24.3",        # Compatible NumPy version
+              "torch==2.0.0",         # Stable PyTorch version
+              "transformers==4.30.0", # Compatible transformers
+              "--no-cache-dir"
+          ])
+
+          from transformers import pipeline, set_seed
+
+          print("🧠 Loading GPT-2 Small model (124M parameters)...")
+          
+          # Simple, stable model loading
+          generator = pipeline(
+              'text-generation', 
+              model='gpt2',  # GPT-2 Small (124M parameters)
+              device='cpu',  # CPU for stability
+              max_length=100
+          )
+          
+          set_seed(42)
+          print("✅ GPT-2 Small loaded successfully!")
+
+          class OpenAIHandler(BaseHTTPRequestHandler):
+              def log_message(self, format, *args):
+                  # Reduce logging
+                  pass
+                  
+              def do_GET(self):
+                  if self.path in ['/health', '/v1/models']:
+                      self.send_response(200)
+                      self.send_header('Content-Type', 'application/json')
+                      self.end_headers()
+                      if self.path == '/v1/models':
+                          response = {"object": "list", "data": [{"id": "gpt2-small", "object": "model"}]}
+                      else:
+                          response = {"status": "healthy", "model": "gpt2-small", "parameters": "124M"}
+                      self.wfile.write(json.dumps(response).encode())
+                  else:
+                      self.send_response(404)
+                      self.end_headers()
+
+              def do_POST(self):
+                  if self.path == '/v1/chat/completions':
+                      content_length = int(self.headers.get('Content-Length', 0))
+                      if content_length > 0:
+                          post_data = self.rfile.read(content_length)
+                          try:
+                              request = json.loads(post_data.decode())
+                              prompt = request['messages'][-1]['content']
+                              
+                              # Conservative settings for stability
+                              max_tokens = min(request.get('max_tokens', 30), 50)
+                              
+                              print(f"📝 Processing: {prompt[:30]}...")
+                              
+                              # Simple generation
+                              start_time = time.time()
+                              result = generator(
+                                  prompt, 
+                                  max_length=len(prompt.split()) + max_tokens,
+                                  temperature=0.7,
+                                  do_sample=True,
+                                  num_return_sequences=1
+                              )
+                              
+                              generation_time = time.time() - start_time
+                              generated_text = result[0]['generated_text'][len(prompt):].strip()
+                              
+                              if not generated_text:
+                                  generated_text = f"I understand you're asking about: {prompt[:30]}... Let me help with that."
+                              
+                              response = {
+                                  "id": f"chatcmpl-{int(time.time())}",
+                                  "object": "chat.completion", 
+                                  "created": int(time.time()),
+                                  "model": "gpt2-small",
+                                  "choices": [{
+                                      "index": 0,
+                                      "message": {
+                                          "role": "assistant",
+                                          "content": generated_text
+                                      },
+                                      "finish_reason": "stop"
+                                  }],
+                                  "usage": {
+                                      "prompt_tokens": len(prompt.split()), 
+                                      "completion_tokens": len(generated_text.split()), 
+                                      "total_tokens": len(prompt.split()) + len(generated_text.split())
+                                  }
+                              }
+                              
+                              print(f"✅ Generated in {generation_time:.2f}s")
+                              
+                              self.send_response(200)
+                              self.send_header('Content-Type', 'application/json')
+                              self.end_headers()
+                              self.wfile.write(json.dumps(response).encode())
+                              
+                          except Exception as e:
+                              print(f"❌ Error: {e}")
+                              self.send_response(500)
+                              self.send_header('Content-Type', 'application/json')
+                              self.end_headers()
+                              error_response = {"error": {"message": str(e), "type": "internal_error"}}
+                              self.wfile.write(json.dumps(error_response).encode())
+                      else:
+                          self.send_response(400)
+                          self.end_headers()
+                  else:
+                      self.send_response(404)
+                      self.end_headers()
+
+          print("🚀 Starting stable GPT-2 Small server...")
+          server = HTTPServer(('0.0.0.0', 8080), OpenAIHandler)
+          
+          print("✅ Server ready! Model: GPT-2 Small (124M), Status: Stable")
+          server.serve_forever()
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 300m      # Very conservative CPU
+            memory: 768Mi  # Enough for small model + overhead
+          limits:
+            cpu: 1000m     # Limit for stability
+            memory: 1536Mi # Conservative memory limit
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 45   # Allow time for model loading
+          periodSeconds: 15
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 90   # Allow plenty of startup time
+          periodSeconds: 30
+          timeoutSeconds: 10
+        env:
+        - name: OMP_NUM_THREADS
+          value: "2"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: simple-llm-service
+  namespace: llm
+  labels:
+    app: simple-llm
+spec:
+  selector:
+    app: simple-llm
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  type: ClusterIP

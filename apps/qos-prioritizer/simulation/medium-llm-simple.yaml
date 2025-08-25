@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medium-llm
+  namespace: llm
+  labels:
+    app: medium-llm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: medium-llm
+  template:
+    metadata:
+      labels:
+        app: medium-llm
+    spec:
+      containers:
+      - name: medium-llm
+        image: python:3.11-slim
+        command: ["python", "-c"]
+        args:
+        - |
+          import json
+          import time
+          import random
+          from http.server import HTTPServer, BaseHTTPRequestHandler
+          from urllib.parse import urlparse
+
+          # Install transformers
+          import subprocess
+          import sys
+          subprocess.check_call([sys.executable, "-m", "pip", "install", "transformers", "torch", "--no-cache-dir"])
+
+          from transformers import pipeline, set_seed
+
+          print("Loading GPT-2 Medium model (355M parameters)...")
+          generator = pipeline('text-generation', model='gpt2-medium', max_length=100)
+          set_seed(42)
+          print("GPT-2 Medium loaded successfully!")
+
+          class OpenAIHandler(BaseHTTPRequestHandler):
+              def do_GET(self):
+                  if self.path in ['/health', '/v1/models']:
+                      self.send_response(200)
+                      self.send_header('Content-Type', 'application/json')
+                      self.end_headers()
+                      if self.path == '/v1/models':
+                          response = {"object": "list", "data": [{"id": "gpt2-medium", "object": "model"}]}
+                      else:
+                          response = {"status": "healthy"}
+                      self.wfile.write(json.dumps(response).encode())
+                  else:
+                      self.send_response(404)
+                      self.end_headers()
+
+              def do_POST(self):
+                  if self.path == '/v1/chat/completions':
+                      content_length = int(self.headers.get('Content-Length', 0))
+                      if content_length > 0:
+                          post_data = self.rfile.read(content_length)
+                          try:
+                              request = json.loads(post_data.decode())
+                              prompt = request['messages'][-1]['content']
+                              
+                              # More realistic processing delay for larger model (1-4 seconds)
+                              delay = 1.0 + random.random() * 3.0
+                              time.sleep(delay)
+                              
+                              # Generate text using GPT-2 Medium
+                              max_tokens = request.get('max_tokens', 30)
+                              result = generator(prompt, max_length=len(prompt.split()) + max_tokens, num_return_sequences=1, do_sample=True, temperature=0.7)
+                              generated_text = result[0]['generated_text'][len(prompt):].strip()
+                              
+                              if not generated_text:
+                                  generated_text = f"I understand you're asking about: {prompt[:50]}... Let me help with that."
+                              
+                              response = {
+                                  "id": f"chatcmpl-{int(time.time())}",
+                                  "object": "chat.completion", 
+                                  "created": int(time.time()),
+                                  "model": request.get("model", "gpt2-medium"),
+                                  "choices": [{
+                                      "index": 0,
+                                      "message": {
+                                          "role": "assistant",
+                                          "content": generated_text
+                                      },
+                                      "finish_reason": "stop"
+                                  }],
+                                  "usage": {"prompt_tokens": len(prompt.split()), "completion_tokens": len(generated_text.split()), "total_tokens": len(prompt.split()) + len(generated_text.split())}
+                              }
+                              
+                              self.send_response(200)
+                              self.send_header('Content-Type', 'application/json')
+                              self.end_headers()
+                              self.wfile.write(json.dumps(response).encode())
+                              
+                          except Exception as e:
+                              print(f"Error: {e}")
+                              self.send_response(500)
+                              self.send_header('Content-Type', 'application/json')
+                              self.end_headers()
+                              error_response = {"error": {"message": str(e), "type": "internal_error"}}
+                              self.wfile.write(json.dumps(error_response).encode())
+                      else:
+                          self.send_response(400)
+                          self.end_headers()
+                  else:
+                      self.send_response(404)
+                      self.end_headers()
+
+          print("Starting GPT-2 Medium server on port 8080...")
+          server = HTTPServer(('0.0.0.0', 8080), OpenAIHandler)
+          server.serve_forever()
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 2Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 120
+          periodSeconds: 20
+          timeoutSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: medium-llm-service
+  namespace: llm
+  labels:
+    app: medium-llm
+spec:
+  selector:
+    app: medium-llm
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  type: ClusterIP

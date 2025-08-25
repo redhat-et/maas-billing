@@ -19,6 +19,7 @@ import {
   Policy as PolicyIcon,
   BarChart as MetricsIcon,
   PlayArrow as SimulatorIcon,
+  Speed as QoSIcon,
   AccountCircle,
   Settings,
   Logout,
@@ -29,6 +30,7 @@ import {
 import PolicyManager from './components/PolicyManager';
 import MetricsDashboard from './components/MetricsDashboard';
 import RequestSimulator from './components/RequestSimulator';
+import QoSMonitor from './components/QoSMonitor';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 const drawerWidth = 240;
@@ -52,6 +54,8 @@ function AppContent() {
         return <PolicyManager />;
       case 'metrics':
         return <MetricsDashboard />;
+      case 'qos':
+        return <QoSMonitor />;
       case 'simulator':
         return <RequestSimulator />;
       default:
@@ -62,6 +66,7 @@ function AppContent() {
   const menuItems = [
     { id: 'policies', label: 'Policy Manager', icon: <PolicyIcon /> },
     { id: 'metrics', label: 'Live Metrics', icon: <MetricsIcon /> },
+    { id: 'qos', label: 'QoS Monitor', icon: <QoSIcon /> },
     { id: 'simulator', label: 'Request Simulator', icon: <SimulatorIcon /> },
   ];
 

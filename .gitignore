@@ -6,3 +6,12 @@ dist/
 build/
 .idea/
 .claude
+
+# Process ID files
+.backend.pid
+.frontend.pid
+
+# Package lock files
+package-lock.json
+apps/frontend/package-lock.json
+apps/backend/package-lock.json
